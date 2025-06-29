@@ -199,4 +199,5 @@ def daily_kick():
 scheduler.add_job(daily_kick, 'cron', hour=0, minute=1)
 
 if __name__ == '__main__':
+    bot.remove_webhook()  # Убираем webhook чтобы не было конфликта
     bot.infinity_polling()
