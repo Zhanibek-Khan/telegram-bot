@@ -198,4 +198,5 @@ def daily_kick():
 
 scheduler.add_job(daily_kick, 'cron', hour=0, minute=1)
 
-bot.infinity_polling()
+if __name__ == '__main__':
+    bot.infinity_polling()
