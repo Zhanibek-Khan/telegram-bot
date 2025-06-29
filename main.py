@@ -1,4 +1,5 @@
 import os
+import re
 import telebot
 import requests
 from datetime import datetime, timedelta
@@ -7,12 +8,11 @@ from google_auth_helper import get_credentials
 from googleapiclient.discovery import build
 from flask import Flask
 from threading import Thread
-import re
 
 # === НАСТРОЙКИ ===
 TOKEN = os.environ['TELEGRAM_TOKEN']
-ADMIN_IDS = [531492235, 1272080338]  # список админов
-EXEMPT_USERS = set(map(str, ADMIN_IDS + [6515051323]))  # всегда анбанены
+ADMIN_IDS = [531492235, 1272080338]
+EXEMPT_USERS = set(map(str, ADMIN_IDS + [6515051323]))
 GROUP_CHAT_ID = -1002619892652
 SPREADSHEET_ID = "1zqUIE7aNMnt5NaG0SzHXu5uqJnUaSiSQ2Tx78J6r7PI"
 USERS_SHEET = "users"
@@ -27,7 +27,7 @@ SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
 creds = get_credentials(SCOPES)
 service = build('sheets', 'v4', credentials=creds)
 
-# === FLASK ПИНГ-СЕРВЕР ===
+# === FLASK: для UptimeRobot ===
 app = Flask('')
 
 @app.route('/ping')
@@ -40,7 +40,7 @@ def run_flask():
 
 Thread(target=run_flask).start()
 
-# === ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ===
+# === GOOGLE SHEETS ===
 def get_sheet(sheet):
     return service.spreadsheets().values().get(spreadsheetId=SPREADSHEET_ID, range=f"{sheet}!A:Z").execute().get("values", [])
 
@@ -76,7 +76,7 @@ def update_or_append_user(uid, username, paid, access_until, whatsapp, invite_li
     else:
         append_sheet(USERS_SHEET, values)
 
-# === ЭТАПЫ РЕГИСТРАЦИИ ===
+# === СОСТОЯНИЯ РЕГИСТРАЦИИ ===
 STATES = {}
 
 @bot.message_handler(commands=['start'])
@@ -179,7 +179,7 @@ def confirm_paid(call):
     bot.send_message(uid, f"Оплата подтверждена. Вот ссылка в группу:\n{link}")
     bot.answer_callback_query(call.id, "Ссылка отправлена")
 
-# === АВТОКИК ===
+# === КАЖДЫЙ ДЕНЬ КИК НЕПЛАТЕЛЬЩИКОВ ===
 def daily_kick():
     rows = get_sheet(USERS_SHEET)
     for row in rows[1:]:
@@ -198,6 +198,6 @@ def daily_kick():
 
 scheduler.add_job(daily_kick, 'cron', hour=0, minute=1)
 
-if __name__ == '__main__':
-    bot.remove_webhook()  # Убираем webhook чтобы не было конфликта
-    bot.infinity_polling()
+# === СТАРТ ПОЛЛИНГА ===
+bot.remove_webhook()
+bot.infinity_polling()
