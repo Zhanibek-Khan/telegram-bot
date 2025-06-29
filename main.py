@@ -34,7 +34,11 @@ app = Flask('')
 def ping():
     return "Bot is alive!", 200
 
-Thread(target=lambda: app.run(host='0.0.0.0', port=8080)).start()
+def run_flask():
+    port = int(os.environ.get('PORT', 8080))
+    app.run(host='0.0.0.0', port=port)
+
+Thread(target=run_flask).start()
 
 # === ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ===
 def get_sheet(sheet):
